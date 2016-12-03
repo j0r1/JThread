@@ -1,0 +1,119 @@
+AC_INIT(configure.in)
+
+JTHREAD_DIRECTORIES="src doc"
+JTHREAD_CFLAGS="-O2"
+JTHREAD_TARGETS=dummymsg
+JTHREAD_ARFLAGS=
+JTHREAD_LDFLAGS=
+
+dnl ---------------------------------------------------------------------------
+dnl Some compiler checks
+dnl ---------------------------------------------------------------------------
+
+AC_PROG_CC
+AC_PROG_CXX
+AC_PROG_CC_C_O
+if test "$ac_cv_prog_cc_c_o" = no ; then
+	AC_MSG_ERROR(Compiler must be able to handle flags -c and -o simultaneously)
+fi
+
+
+dnl ---------------------------------------------------------------------------
+dnl Check if 'ld' exists and which syntax to use
+dnl ---------------------------------------------------------------------------
+
+USE_LD=no
+AC_CHECK_PROGS(JTHREAD_LD,ld,"notfound")
+if test "$JTHREAD_LD" != notfound ; then
+	AC_MSG_CHECKING(arguments for ld)
+	echo "int main(void){return 0;}" > configtest.c
+	if eval $CC -c -o configtest.o configtest.c 2>/dev/null; then
+		
+		dnl Check format gnu ld uses
+		if eval $JTHREAD_LD -shared -soname conftest -o conftest.so configtest.o 2>/dev/null; then
+			JTHREAD_LDFLAGS="-shared -soname"
+			USE_LD=yes
+		
+		dnl Check solaris format
+		elif eval $JTHREAD_LD -G -h conftest -o conftest.so configtest.o 2>/dev/null; then
+			JTHREAD_LDFLAGS="-G -h"
+			USE_LD=yes
+		fi
+	fi	
+	
+	if test "$USE_LD" = yes ; then
+		AC_MSG_RESULT($JTHREAD_LDFLAGS)
+	else
+		AC_MSG_RESULT(unknown)
+	fi
+		
+	rm -rf configtest.o configtest.c conftest.so 2>/dev/null
+fi
+
+if test "$USE_LD" = yes ; then
+	JTHREAD_TARGETS="sharedlib"
+else
+	AC_MSG_WARN(Won't be able to generate shared library)
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl Check if 'ar' exists and which syntax to use
+dnl ---------------------------------------------------------------------------
+
+USE_AR=no
+AC_CHECK_PROGS(JTHREAD_AR,ar,"notfound")
+if test "$JTHREAD_AR" != notfound ; then
+	AC_MSG_CHECKING(arguments for ar)
+	echo "int main(void){return 0;}" > configtest.c
+	if eval $CC -c -o configtest.o configtest.c 2>/dev/null; then
+		
+		dnl Check format gnu ar uses
+		if eval $JTHREAD_AR qc conftest.a configtest.o 2>/dev/null; then
+			JTHREAD_ARFLAGS="qc"
+			USE_AR=yes
+		
+		dnl Check solaris format
+		elif eval $JTHREAD_AR -r -u -c conftest.a configtest.o 2>/dev/null; then
+			JTHREAD_ARFLAGS="-r -u -c"
+			USE_AR=yes
+		fi
+	fi	
+	
+	if test "$USE_AR" = yes ; then
+		AC_MSG_RESULT($JTHREAD_ARFLAGS)
+	else
+		AC_MSG_RESULT(unknown)
+	fi
+		
+	rm -rf configtest.o configtest.c conftest.a 2>/dev/null
+fi
+
+if test "$USE_AR" = yes ; then
+	if test "$JTHREAD_TARGETS" != dummymsg ; then
+		JTHREAD_TARGETS="$JTHREAD_TARGETS staticlib"
+	else
+		JTHREAD_TARGETS=staticlib
+	fi
+else
+	AC_MSG_WARN(Won't be able to generate static library)
+fi
+
+dnl ---------------------------------------------------------------------------
+dnl Check for pthread
+dnl ---------------------------------------------------------------------------
+
+AC_CHECK_HEADER(pthread.h,,AC_MSG_ERROR(You need libpthread to compile the JThread package))
+
+dnl ---------------------------------------------------------------------------
+dnl Finish
+dnl ---------------------------------------------------------------------------
+
+AC_SUBST(JTHREAD_DIRECTORIES)
+AC_SUBST(JTHREAD_CFLAGS)
+AC_SUBST(JTHREAD_ARFLAGS)
+AC_SUBST(JTHREAD_LDFLAGS)
+AC_SUBST(JTHREAD_TARGETS)
+AC_OUTPUT(Makefile\
+	  src/Makefile\
+	  doc/Makefile)
+

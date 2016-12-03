@@ -1,0 +1,14 @@
+                                                             February 12, 2001
+
+
+
+                                JThread ChangeLog
+				  
+			 	    ---------
+
+
+ 1.0.0 (February 2001)
+ 	* Initial release
+	* Thanks to Stijn Vansummeren (stijnvs@lumumba.luc.ac.be) for fixing
+	  a bug in the JThread::GetReturnValue() function
+
